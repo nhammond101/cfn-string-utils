@@ -1,5 +1,5 @@
 templates:
-- template.yml
+- template.yaml
 ignore_templates:
 - config.yml
 include_checks:

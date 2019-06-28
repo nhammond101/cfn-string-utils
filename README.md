@@ -9,4 +9,5 @@ Add new tools to the template and submit a merge request
 
 ## Config
 
+* Install [Circle CLI](https://circleci.com/docs/2.0/local-cli/#installation)
 * Install [cfn-lint](https://github.com/aws-cloudformation/cfn-python-lint)
