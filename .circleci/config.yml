@@ -1,0 +1,87 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+workflows:
+  version: 2.1
+  orbs:
+    aws: circleci/aws-cli@0.1.13
+  feature:
+    jobs:
+      build:
+        docker:
+          # specify the version you desire here
+          - image: circleci/python:3.6.1
+
+        working_directory: ~/repo
+
+        steps:
+          - checkout
+
+          # Download and cache dependencies
+          - restore_cache:
+              keys:
+                - v1-dependencies-{{ checksum "requirements.txt" }}
+                # fallback to using the latest cache if no exact match is found
+                - v1-dependencies-
+
+          - run:
+              name: install dependencies
+              command: |
+                python3 -m venv venv
+                . venv/bin/activate
+                pip install -r requirements.txt
+
+          - save_cache:
+              paths:
+                - ./venv
+              key: v1-dependencies-{{ checksum "requirements.txt" }}
+
+          # run linter
+          - run:
+              name: run tests
+              command: |
+                . venv/bin/activate
+                cfn-lint
+
+    #      - store_artifacts:
+    #          path: test-reports
+    #          destination: test-reports
+
+          - deploy:
+              name: upload template to s3
+              command: |
+                . venv/bin/activate
+                aws s3 sync . s3://${S3_BUCKET}/${CIRCLE_BUILD_NUM}
+                --exclude "*"
+                --include "*.yaml"
+
+      deploy:
+        type: approval # <<< This key-value pair will set your workflow to a status of "On Hold"
+          requires: # We only run the "hold" job when build has succeeded
+            - build
+
+        docker:
+          # specify the version you desire here
+          - image: circleci/python:3.6.1
+
+        working_directory: ~/repo
+
+        steps:
+          - checkout
+
+          # Download the cached dependencies
+          - restore_cache:
+              keys:
+                - v1-dependencies-{{ checksum "requirements.txt" }}
+                # fallback to using the latest cache if no exact match is found
+                - v1-dependencies-
+
+          - deploy:
+              name: update stack
+              command: |
+                . venv/bin/activate
+                aws cloudformation update-stack
+                --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND
+                --stack-name ${CFN_STACK_NAME}
+                --template-url https://s3.amazonaws.com/${S3_BUCKET}/${CIRCLE_BUILD_NUM}/template.yaml

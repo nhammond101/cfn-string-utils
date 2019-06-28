@@ -1,0 +1,7 @@
+templates:
+- template.yml
+ignore_templates:
+- config.yml
+include_checks:
+- I
+- f parseable
