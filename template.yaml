@@ -78,7 +78,7 @@ Resources:
   Transform:
     Type: AWS::CloudFormation::Macro
     Properties:
-      Name: !Sub '${AWS::AccountId}-String-Utils'
+      Name: !Sub 'cfn-String-Utils'
       Description: Provides various string processing functions
       FunctionName: !GetAtt TransformFunction.Arn
 
